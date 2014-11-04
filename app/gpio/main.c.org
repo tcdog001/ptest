@@ -1,0 +1,187 @@
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "sys_include.h"
+#include "gpio_public.h"
+
+#define GPIO_NAME_LEN       15
+#define GPIO_LINE_LEN       1023
+
+#define GPIO_NUMBER_SYS     40
+#define GPIO_NUMBER_SATA    41
+#define GPIO_NUMBER_RESET   44
+
+#define GPIO_NAME_SYS       "sys"
+#define GPIO_NAME_SATA      "sata"
+#define GPIO_NAME_RESET     "reset"
+
+#define GPIO_INIT(_name, _number)  {.name=_name, .number=_number, .value=0}
+static struct {
+    char name[1+GPIO_NAME_LEN];
+    int number;
+    int value;
+} gpio[] = {
+    GPIO_INIT(GPIO_NAME_SYS,    GPIO_NUMBER_SYS),
+    GPIO_INIT(GPIO_NAME_SATA,   GPIO_NUMBER_SATA),
+    GPIO_INIT(GPIO_NAME_RESET,  GPIO_NUMBER_RESET),
+};
+#define ASIZE(x)    (sizeof(x)/sizeof((x)[0]))
+#define COUNT       ASIZE(gpio)
+
+#define println(fmt, args...)   printf(fmt "\n", ##args)
+#define dprintln println
+
+static inline int
+gpio_idx(char *name)
+{
+    int i;
+
+    for (i=0; i<COUNT; i++) {
+        if (0==strcmp(name, gpio[i].name)) {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
+static inline int
+gpio_read(int i)
+{
+    int err = 0;
+
+    err = read_gpio_status(gpio[i].number, &gpio[i].value);
+    if (err) {
+        println("read gpio %s error(%d)", gpio[i].name, err);
+    }
+    gpio[i].value = !!gpio[i].value;
+    
+    return err;
+}
+
+static inline int
+gpio_write(int i)
+{
+    int err = 0;
+
+    gpio[i].value = !!gpio[i].value;
+    err = write_gpio_status(gpio[i].number, gpio[i].value);
+    if (err) {
+        println("write gpio %s error(%d)", gpio[i].name, err);
+    }
+
+    return err;
+}
+
+void usage(int argc, char *argv[])
+{
+    println("%s ==> get all gpio", argv[0]);
+    println("%s name ==> get gpio by name", argv[0]);
+    println("%s name1=value1 name2=value2 ... ==> set gpio by name and value", argv[0]);
+}
+
+int main(int argc, char *argv[])
+{
+    int err = 0;
+    int len;
+    int idx;
+    int i;
+    char *name;
+    char *value;
+    
+    /*
+    * display all
+    */
+    if (1==argc) {
+        for (i=0; i<COUNT; i++) {
+            if (0 == gpio_read(i)) {
+                println("%s=%d", gpio[i].name, gpio[i].value);
+            }
+        }
+
+        return 0;
+    }
+    else if (2==argc) {
+        char *name = argv[1];
+        /*
+        * help
+        */
+        if (0==strcmp("-h", name) || 0==strcmp("--help", name)) {
+            usage(argc, argv);
+            
+            return 0;
+        }
+        /*
+        * get by name
+        */
+        else if (NULL==strchr(name, '=')) {
+            idx = gpio_idx(name);
+            if (idx<0) {
+                println("argv[1](%s) bad name", name);
+
+                return -1;
+            }
+            
+            err = gpio_read(idx);
+            if (0==err) {
+                println("%d", gpio[idx].value);
+            }
+            
+            return err;
+        }
+    }
+    
+    /*
+    * set by name
+    */
+    for (i=1; i<argc; i++) {
+        char line[1+GPIO_LINE_LEN] = {0};
+        len = strlen(argv[i]);
+        
+        /*
+        * check input length
+        */
+        if (len > GPIO_LINE_LEN) {
+            println("argv[%d](%s) too long", i, argv[i]);
+
+            return -1;
+        }
+        
+        strcpy(line, argv[i]);
+
+        /*
+        * get name
+        */
+        name = line;
+        value = strchr(line, '=');
+        if (NULL==value) {
+            println("argv[%d](%s) should as xxx=xxxx", i, argv[i]);
+
+            return -1;
+        }
+        *value = 0; value++;
+        
+        /*
+        * check name
+        */
+        idx = gpio_idx(name);
+        if (idx<0) {
+            println("argv[%d](%s) bad name(%s)", i, argv[i], name);
+            
+            return -1;
+        }
+        
+        /*
+        * set value
+        */
+        gpio[idx].value = atoi(value);
+        err = gpio_write(i);
+        if (0!=err) {
+            return err;
+        }
+    }
+    
+    return 0;
+}
+
