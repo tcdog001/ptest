@@ -1,7 +1,4 @@
-export STB_ROOT = $(shell pwd)
-ifndef "${hisitopdir}"
-export hisitopdir = $(STB_ROOT)/..
-endif
+include ./setenv
 include $(STB_ROOT)/config.mak
 
 TOOL_DIR:=$(shell find tool -maxdepth 2 -type d|grep "tool/")
