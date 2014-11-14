@@ -50,8 +50,8 @@ all: $(OBJS)
 	@for each_lib in $(MAKES_LIST);do cd $$each_lib;make -f Makefile $(LIBOUT); cd ..; done
 	$(LDA) $(LDFLAGSSTA) $(SYS_INCLUDE) $(APP_INCLUDE) $(LIB_DIR) $(OBJS) $(APPLIB) $(SYSLIB) $(LDFLAGSEND) -o $(APPOUT) 
 	@echo "Linking Success!"
-	cp -f $(STB_ROOT)/app/gpio/gpio ${hisitopdir}/autelan/custom/usr/bin/
-	cp -f $(STB_ROOT)/lib/dlib/libiconv.so.2 ${hisitopdir}/autelan/custom/usr/lib/
+	cp -f $(STB_ROOT)/app/gpio/gpio ${hisitopdir}/custom/usr/bin/
+	cp -f $(STB_ROOT)/lib/dlib/libiconv.so.2 ${hisitopdir}/custom/usr/lib/
 	
 clean:all_clean	
 all_clean:
