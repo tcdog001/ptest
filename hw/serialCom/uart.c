@@ -274,7 +274,7 @@ int  serialReceive(int fd, char *RXBUF, int RX_len)
                 break;
             }
 
-            printf("%d bytes need to be readed\n", ret);
+//          printf("%d bytes need to be readed\n", ret);
             ret = read(fd, RXBUF+pos, RX_len-pos);
             pos += ret;
 			if(RXBUF[pos-1] == '#')

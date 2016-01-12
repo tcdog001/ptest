@@ -14,7 +14,6 @@ static char mac_id[64];
 static int init_hard_device_task(void);
 static int fd_ser = -1;
 static void exit_timer(void);
-static void begin_record(void);
 
 static int get_system_time(void)
 {
@@ -41,11 +40,121 @@ static int get_system_time(void)
     return 1;
 }
 
+
 int main( int argc, char **argv )
 {
     char ch;
+    int serfd;
+    char data[256];
+    char recvdata[256];
+    int length;
+    int recvlength;
+    int i;
+    char cmdline[256];
+    int ret;
 
-    printf("hello world\n");
+    //调试输出单元
+    tracePrintfInit();
+    {
+        //modifyTraceLevelByMode(SYS_MODE, DEBUG_TRACE);
+        //modifyTraceLevelByMode(IMG_MODE, DEBUG_TRACE);
+        //modifyTraceLevelByMode(FT_MODE, DEBUG_TRACE);
+    }
+
+    printf("begin integrate\n");
+
+    serfd = InitSerialCom(2,115200,'n',1, 8);
+    if (serfd == -1)
+    {
+        printf("COM2 open failure\n");
+        return 0;
+    }
+
+    i = 0;
+    while(1)
+    {
+        memset(data, 0, 256);
+        sprintf(data, "hello\n");
+        length = strlen(data);
+        SerialSend(serfd, (unsigned char *)data, length);
+
+        memset(recvdata, 0, 256);
+
+        recvlength = serialReceive(serfd, recvdata, 256);
+        if (recvlength)
+        {
+            printf("|%s|%d\n", recvdata, recvlength);
+            if (recvlength == 2)
+            {
+                if (strncmp(recvdata, "ok", strlen("ok")) == 0)
+                {
+                    printf("COM2 OK\n");
+                    break;
+
+                }
+            }
+
+        }
+        i++;
+
+        if (i > 50)
+        {
+            printf("COM2 FAILURE\n");
+            break;
+        }
+
+        usleep(1000*500);
+    }
+
+    while(1)
+    {
+        memset(cmdline, 0, 256);
+        scanf("%s", cmdline);
+
+        if (strncmp(cmdline, "getRTCTime", strlen("getRTCTime")) == 0)
+        {
+            memset(data, 0, 64);
+            get_current_time_string(data);
+        }
+        else if (strncmp(cmdline, "setUSBTest", strlen("setUSBTest")) == 0)
+        {
+            ret = confirm_usb_running();
+            if (ret)
+            {
+                printf("testUSBSuccess\n");
+            }
+            else
+            {
+                printf("testUSBFailure\n");
+            }
+        }
+        else if (strncmp(cmdline, "getSN", strlen("getSN")) == 0)
+        {
+            memset(data, 0, 64);
+            get_pcba_sn(data, 64);
+            printf("reportSN|%s\n", data);
+        }
+        else if (strncmp(cmdline, "getMac", strlen("getMac")) == 0)
+        {
+            memset(data, 0, 64);
+            get_pcba_mac(data, 64);
+            printf("reportMAC|%s\n", data);
+        }
+        else if (strncmp(cmdline, "getMediaBoradTestReport", strlen("getMediaBoradTestReport")) == 0)
+        {
+            memset(data, 0, 64);
+            get_pcba_idx99(data, 64);
+            printf("reportMediaBoardTestInfo|%s\n", data);
+        }
+
+    }
+
+
+
+
+    #if 0
+    char ch;
+
     //调试输出单元
     tracePrintfInit();
     {
@@ -57,7 +166,6 @@ int main( int argc, char **argv )
     init_display_output_device(FMT_1080P_60);
 
     init_framebuf_module();
-    set_test_status(temperature_failure);
 
     ft_Font_Init();
     init_temperature_module();
@@ -81,23 +189,21 @@ int main( int argc, char **argv )
 
     while(1)
     {
-#if 1
-
+        #if 1
         if ((access("/tmp/leftai_ok", F_OK) == 0) &&
             (access("/tmp/rightai_ok", F_OK) == 0))
         {
             usleep(1000*1000);
             break;
         }
-
-#else
+        #else
 
         if (access("/tmp/rightai_ok", F_OK) == 0)
         {
             break;
         }
 
-#endif
+        #endif
 
         ai_display_filter(0);
 
@@ -116,47 +222,21 @@ int main( int argc, char **argv )
         set_test_status(audio_ok);
     }
 
-    if (access("/tmp/leftai_ok", F_OK) != 0)
-    {
-        printf("\nline in failure\n");
-    }
-
-    if (access("/tmp/rightai_ok", F_OK) != 0)
-    {
-        printf("\nmic in failure\n");
-    }
-
-    //printf("dddddddddddddddd\n");
     ai_display_filter(1);
     system("touch /tmp/exit_ai");
+
 
    // printf("aaaaaaa\n");
 
     display_stb_info();
 
     usleep(500*1000);
-
-#if 1
    // printf("dddddd\n");
-    mute_ai_display();
 
-    system("rm /tmp/leftai_ok /tmp/rightai_ok");
-    system("/tmp/sample_ai >/tmp/ai.log &");
-    usleep(6000*1000);
-    if (access("/tmp/rightai_ok", F_OK) == 0)
-    {
-        printf("\nmic in mute failure\n");
-        //set_audio_failure();
-    }
 
-    printf("\nmic in mute success\n");
-    system("touch /tmp/exit_ai");
-#endif
 
-#ifndef SYSTEM_TEST_SUPPORT
     series_display();
     usleep(500*1000);
-#endif
 
     display_msata();
     usleep(500*1000);
@@ -164,14 +244,12 @@ int main( int argc, char **argv )
     display_tfcard();
     usleep(500*1000);
 
-#ifndef SYSTEM_TEST_SUPPORT
     display_usb();
     usleep(500*1000);
-#endif
 
-    exit_timer();
     while(1)
     {
+
         if (test_flag & gpio_test)
         {
             display_gpio_test();
@@ -182,7 +260,7 @@ int main( int argc, char **argv )
             display_gpio_putdown();
         }
 
-        //printf("ddddd\n");
+
         if (get_force_exit_gpio())
         {
             printf("\nGPIO failure\n");
@@ -191,22 +269,14 @@ int main( int argc, char **argv )
         usleep(1000*1000);
     }
 
-    begin_record();
-#ifndef SYSTEM_TEST_SUPPORT
     save_test_status();
-#endif
+    exit_timer();
+
+
     usleep(500*1000);
     printf("\nvideo play\n");
     display_player();
     //save_test_status();
-#if 0
-    while(0)
-    {
-
-        usleep(1000*1000);
-
-    }
-#endif
 
 #if 1
     while(1)
@@ -279,21 +349,8 @@ int main( int argc, char **argv )
         }
         else if (ch == 'u')
         {
-            GrPos Pos;
-            GrRegion Region;
-
-            Pos.x = 137;
-            Pos.y = 102;
-            Region.x = Region.y = 0;
-            Region.w = 40*10;
-            Region.h = 40;
-
-            refresh_background_2_device(Pos, Region);
-
-            #if 0
             fprintf(stderr, "开始装备测试\n");
             set_test_network(0);
-            #endif
         }
         else if (ch == 'i')
         {
@@ -391,6 +448,8 @@ int main( int argc, char **argv )
     close_display_output_device();
 
     return 0;
+    #endif
+
 }
 
 static int bExitTimerTask = 0;
@@ -400,11 +459,6 @@ static pthread_t pthread_timer_task = 0;
 static void exit_timer(void)
 {
     bExitTimerTask = 2;
-}
-
-static void begin_record(void)
-{
-    bExitTimerTask  = 1;
 }
 
 //这个任务的时间间隔是50ms
@@ -418,13 +472,10 @@ static void* timer_task_func(void *arg)
     while(bExitTimerTask)
     {
         gpio_sharp_filter();
+        show_temperature_filter();
+        //ai_display_filter(0);
+        show_rtc_filter();
 
-        if (bExitTimerTask == 1)
-        {
-            show_temperature_filter();
-            //ai_display_filter(0);
-            show_rtc_filter();
-        }
         usleep(5*1000);
     }
 
@@ -438,15 +489,6 @@ static int init_hard_device_task(void)
     return 1;
 }
 
-void set_temperature_success(void)
-{
-    test_flag = test_flag&0xfff7;
-}
-
-void set_audio_failure(void)
-{
-    test_flag = test_flag&0xffdf;
-}
 
 void set_test_status(unsigned int flag)
 {

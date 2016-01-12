@@ -128,10 +128,13 @@ static void *verificate()
 int openSerialModel()
 {
 	int ret;
-	fd_ser = InitSerialCom(2,9600,'n',1, 8);
+	fd_ser = InitSerialCom(2,115200,'n',1, 8);
 	if(!fd_ser)
 		return -1;
-	state = 0;
+
+    return 1;
+#if 0
+    state = 0;
 	memcpy(msg.syn, "00", 2);
 
 	memcpy(msg.head, "DC1", 3);
@@ -147,6 +150,7 @@ int openSerialModel()
 	{
 		printf("pthread_create error!\n");
 	}
+#endif
 }
 void startSerialModel()
 {

@@ -71,6 +71,36 @@ int tcp_client_send_data(tcp_client_item_def *pHandle, char *pData, int *pLength
 
 int tcp_client_recv_data(tcp_client_item_def *pHandle, char *pData, int *pLength)
 {
+    #if 1
+    struct sockaddr_in socketaddr;
+    int recvlen;
+    int sockaddlen;
+
+    sockaddlen = sizeof(struct sockaddr);
+    socketaddr.sin_family = AF_INET;
+    socketaddr.sin_port = htons(pHandle->remote_port);
+    memset(&(socketaddr.sin_zero), 0, 8);
+    if (pHandle->remote_ip[0] == 0)
+    {
+        socketaddr.sin_addr.s_addr = INADDR_ANY; //inet_addr(pHandle->remote_ip);//INADDR_ANY;
+    }
+    else
+    {
+        socketaddr.sin_addr.s_addr = inet_addr(pHandle->remote_ip);
+    }
+    //memset(&(socketaddr.sin_zero), 0, 8);
+
+    recvlen = *pLength;
+    recvlen = recvfrom(pHandle->socket_fp,
+                pData, recvlen,
+                0,
+                (struct sockaddr *)&socketaddr,
+                (unsigned int *)&sockaddlen);
+
+    return recvlen;
+    #endif
+
+    #if 0
     int length;
 
     length = *pLength;
@@ -78,7 +108,20 @@ int tcp_client_recv_data(tcp_client_item_def *pHandle, char *pData, int *pLength
     length = recv(pHandle->socket_fp, pData, length, 0);
     *pLength = length;
     pHandle->bRecv = 0;
+
     return length;
+    #endif
+
+}
+
+int tcp_client_close(tcp_client_item_def *pHandle)
+{
+    if (pHandle->socket_fp != -1)
+    {
+        close(pHandle->socket_fp);
+    }
+
+    return 1;
 }
 
 int tcp_client_safe_close(tcp_client_item_def *pHandle)

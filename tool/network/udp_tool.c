@@ -216,7 +216,7 @@ int recv_data_by_udp_instance(udp_item_def *pHandle, char *pData, int *plength)
 
     recvlen = *plength;
     recvlen = recvfrom(pHandle->socket_fp,
-                pData, 1500,
+                pData, recvlen,
                 0,
                 (struct sockaddr *)&socketaddr,
                 (unsigned int *)&sockaddlen);

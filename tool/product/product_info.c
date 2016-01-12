@@ -23,6 +23,7 @@ int get_pcba_mac(char *mac, int length)
     rfp = fopen("/tmp/mac.ini", "rb");
     if (rfp == NULL)
     {
+        printf("\nmac read failure\n");
         return 0;
     }
 
@@ -32,6 +33,27 @@ int get_pcba_mac(char *mac, int length)
 
     return length;
 }
+
+int get_pcba_idx99(char *report, int length)
+{
+    FILE *rfp = NULL;
+
+    system("bootm idx99 > /tmp/idx99.ini");
+
+    rfp = fopen("/tmp/idx99.ini", "rb");
+    if (rfp == NULL)
+    {
+        printf("\nidx99 read failure\n");
+        return 0;
+    }
+
+    length = fread(report, 1, 20, rfp);
+    //M_TRACE(DEBUG_TRACE, SYS_MODE, "mac=%s,%d\n", mac, length);
+    fclose(rfp);
+
+    return length;
+}
+
 
 int set_pcba_sn(char *sn, int length)
 {
@@ -55,6 +77,7 @@ int get_pcba_sn(char *sn, int length)
     rfp = fopen("/tmp/sn.ini", "rb");
     if (rfp == NULL)
     {
+        printf("\nsn read failure\n");
         return 0;
     }
 

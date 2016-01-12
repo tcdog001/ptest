@@ -50,6 +50,7 @@ enum
     PAGE_MODE,
     FT_MODE,
     SUB_MODE,
+    AV_MODE,
 
     TRACE_CNT
 };

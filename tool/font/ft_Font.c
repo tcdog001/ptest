@@ -304,12 +304,14 @@ int ft_Font_Init(void)
     ft_MEM.cost_mem_width = 0;
     ft_MEM.disp_mem_height = 0;
     ft_MEM.disp_mem_width = 0;
-    ft_MEM.pmem = malloc(1280*100*2);
+    ft_MEM.pmem = malloc(1280*400*4);
 
     ft_MEM_SLV.cost_mem_width = 0;
     ft_MEM_SLV.disp_mem_height = 0;
     ft_MEM_SLV.disp_mem_width = 0;
-    ft_MEM_SLV.pmem = malloc(1280*100*2);
+    ft_MEM_SLV.pmem = malloc(1280*400*4);
+
+    printf("fontfinish\n");
 
     return _FT_FONT_SUCC;
 }
@@ -474,15 +476,21 @@ int ft_Font_StringToMem(char *pText, FT_MEM_BLOCK *pMem, unsigned int fontSize, 
         }
 
         slot = ft_Font_FtFace->glyph;
+
+        #if 1
         //if the slot format is not ft_glyph_format_bitmap, then render the glyph
-        if(slot->format != ft_glyph_format_bitmap)
-        {
+        //if(slot->format != ft_glyph_format_bitmap)
+        //{
+          //  printf("gggggggggggggggggggg\n");
             if(FT_Render_Glyph(ft_Font_FtFace->glyph, FT_RENDER_MODE_NORMAL) != 0)
             {
                 //render failure
                 continue;
             }
-        }
+
+          //  printf("ffffffffffffffffffffff\n");
+        //}
+        #endif
 
         if(FT_Get_Glyph(slot, &glyph) != 0)
         {

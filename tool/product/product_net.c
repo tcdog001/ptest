@@ -32,6 +32,12 @@ int set_test_network(int number)
     return 0;
 }
 
+int network_listen_filter(void)
+{
+
+
+}
+
 int confirm_network_running(int num)
 {
     int port;

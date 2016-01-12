@@ -2,30 +2,6 @@
 #include "img_public.h"
 #include "temperature.h"
 
-#define wel_pos_x  520
-#define wel_pos_y  225
-
-#define mute_pos_x  520
-#define mute_pos_y  265
-
-#define ser_pos_x  520
-#define ser_pos_y  305
-
-#define msata_pos_x 520
-#define msata_pos_y 345
-
-#define tfc_pos_x  520
-#define tfc_pos_y  385
-
-#define usb_pos_x  520
-#define usb_pos_y  425
-
-#define gpio_pos_x 520
-#define gpio_pos_y 465
-
-#define play_pos_x 520
-#define play_pos_y 505
-
 void prepare_bg(void)
 {
     Pixel64 *pCanvas;
@@ -72,7 +48,14 @@ void show_temperature_filter(void)
     GrPos Pos;
     static GrRegion Region = {0, 0, 500, 40};
     Pixel64 FT;
-    static int tmperature_cnt = 3;
+    static int tmperature_cnt = 0;
+
+    /*
+    if (tmperature_cnt > 3)
+    {
+        return ;
+    }
+    */
 
     gettimeofday(&cur_tm, NULL);
 
@@ -81,7 +64,7 @@ void show_temperature_filter(void)
     {
         memset(data, 0, 64);
         temp = read_temperature();
-        if ((temp <= 25) ||
+        if ((temp <= 24) ||
             (temp >= 60))
         {
             FT.RGB.a = 255;
@@ -89,14 +72,12 @@ void show_temperature_filter(void)
             FT.RGB.g = 0;
             FT.RGB.b = 0;
 
-#if 0
             set_test_status(temperature_failure);
             if (tmperature_cnt == 3)
             {
                 printf("\ntemperature failure\n");
             }
             tmperature_cnt++;
-#endif
         }
         else
         {
@@ -109,8 +90,6 @@ void show_temperature_filter(void)
                 printf("\ntemperature success\n");
             }
             tmperature_cnt ++;
-
-            set_temperature_success();
         }
 
         if (tmperature_cnt > 4)
@@ -132,12 +111,14 @@ void show_temperature_filter(void)
         Region.w = 400;
         Region.h = 40;
         refresh_background_2_device(Pos, Region);
+        //printf("44444444444444444444444\n");
         ft_Font_Str2Disp_return_region(data,
             FT,
             Pos,
             35,
             &Region);
 
+        //printf("55555555555555555555555\n");
         record_tm = cur_tm;
     }
 }
@@ -155,6 +136,14 @@ void show_rtc_filter(void)
     static int rtc_cnt = 0;
 
     gettimeofday(&cur_tm, NULL);
+
+
+    /*
+    if (rtc_cnt > 3)
+    {
+        return ;
+    }
+    */
 
     distms = ((cur_tm.tv_sec*1000+(cur_tm.tv_usec)/1000)-(rtc_record_tm.tv_sec*1000+(rtc_record_tm.tv_usec)/1000));
     if (distms >= 2*1000)
@@ -175,10 +164,9 @@ void show_rtc_filter(void)
             FT.RGB.b = 0;
             if (rtc_cnt == 3)
             {
-                printf("\nrtc failure [sync_time_from_rtc]\n");
-                set_test_status(rtc_failure);
+                printf("\nrtc failure\n");
             }
-
+            set_test_status(rtc_failure);
         }
         else
         {
@@ -198,10 +186,9 @@ void show_rtc_filter(void)
             FT.RGB.b = 0;
             if (rtc_cnt == 3)
             {
-                printf("\nrtc failure %s\n", data);
-                set_test_status(rtc_failure);
+                printf("\nrtc failure\n");
             }
-
+            set_test_status(rtc_failure);
         }
         else
         {
@@ -251,99 +238,92 @@ void ai_display_filter(int flag)
     static int line_ok_disp = 0;
     static int mic_ok_disp = 0;
 
-    if (flag == 0)
+    if (bquit)
     {
-        if (bquit)
+        return ;
+    }
+
+    gettimeofday(&cur_tm, NULL);
+
+    distms = ((cur_tm.tv_sec*1000+(cur_tm.tv_usec)/1000)-(ai_finish_tm.tv_sec*1000+(ai_finish_tm.tv_usec)/1000));
+    if (distms >= 60*1000)
+    {
+        bquit = 1;
+
+        if (access("/tmp/rightai_ok", F_OK) == 0)
         {
-            return ;
+            memset(data, 0, 32);
+            sprintf(data, "mic输入ok");
+            Pos.x = 590;
+            Pos.y = 130;
+            FT.RGB.a = 255;
+            FT.RGB.r = 255;
+            FT.RGB.g = 255;
+            FT.RGB.b = 255;
+            Region.x = Region.y = 0;
+            Region.w = 240;
+            Region.h = 40;
+            if (mic_ok_disp == 0)
+            {
+                mic_ok_disp = 1;
+                printf("\nmic success\n");
+
+            refresh_background_2_device(Pos, Region);
+            ft_Font_Str2Disp_return_region(data,
+                FT,
+                Pos,
+                35,
+                &Region);
+            }
+        }
+        else
+        {
+            printf("\nmic failure\n");
         }
 
-        gettimeofday(&cur_tm, NULL);
-
-        distms = ((cur_tm.tv_sec*1000+(cur_tm.tv_usec)/1000)-(ai_finish_tm.tv_sec*1000+(ai_finish_tm.tv_usec)/1000));
-        if (distms >= 60*1000)
+        if (access("/tmp/leftai_ok", F_OK) == 0)
         {
-            bquit = 1;
+            memset(data, 0, 32);
+            sprintf(data, "LINE输入ok");
+            Pos.x = 840;
+            Pos.y = 130;
+            FT.RGB.a = 255;
+            FT.RGB.r = 255;
+            FT.RGB.g = 255;
+            FT.RGB.b = 255;
+            Region.x = Region.y = 0;
+            Region.w = 200;
+            Region.h = 40;
 
-            if (access("/tmp/rightai_ok", F_OK) == 0)
+            if (line_ok_disp == 0)
             {
-                memset(data, 0, 32);
-                sprintf(data, "mic输入ok");
-                Pos.x = 590;
-                Pos.y = 130;
-                FT.RGB.a = 255;
-                FT.RGB.r = 255;
-                FT.RGB.g = 255;
-                FT.RGB.b = 255;
-                Region.x = Region.y = 0;
-                Region.w = 240;
-                Region.h = 40;
-                if (mic_ok_disp == 0)
-                {
-                    mic_ok_disp = 1;
-                    printf("\nmic success\n");
-
+                printf("\nline success\n");
                 refresh_background_2_device(Pos, Region);
                 ft_Font_Str2Disp_return_region(data,
                     FT,
                     Pos,
                     35,
                     &Region);
-                }
+                line_ok_disp = 1;
             }
-            else
-            {
-                printf("\nmic failure\n");
-            }
-
-            if (access("/tmp/leftai_ok", F_OK) == 0)
-            {
-                memset(data, 0, 32);
-                sprintf(data, "LINE输入ok");
-                Pos.x = 840;
-                Pos.y = 130;
-                FT.RGB.a = 255;
-                FT.RGB.r = 255;
-                FT.RGB.g = 255;
-                FT.RGB.b = 255;
-                Region.x = Region.y = 0;
-                Region.w = 200;
-                Region.h = 40;
-
-                if (line_ok_disp == 0)
-                {
-                    printf("\nline success\n");
-                    refresh_background_2_device(Pos, Region);
-                    ft_Font_Str2Disp_return_region(data,
-                        FT,
-                        Pos,
-                        35,
-                        &Region);
-                    line_ok_disp = 1;
-                }
-            }
-            else
-            {
-                printf("\nline failure\n");
-            }
-
-            return ;
+        }
+        else
+        {
+            printf("\nline failure\n");
         }
 
+        return ;
     }
+
 
     distms = ((cur_tm.tv_sec*1000+(cur_tm.tv_usec)/1000)-(ai_record_tm.tv_sec*1000+(ai_record_tm.tv_usec)/1000));
     if (flag == 1)
     {
-        mic_ok_disp = 0;
-        line_ok_disp = 0;
-        distms = 6000;
-        printf("force display\n");
+        distms == 6000;
     }
 
     if (distms >= 5*1000)
     {
-        //printf("sssssssssssssssss\n");
         if (access("/tmp/rightai_ok", F_OK) == 0)
         {
             memset(data, 0, 32);
@@ -369,7 +349,6 @@ void ai_display_filter(int flag)
                     Pos,
                     35,
                     &Region);
-
             }
         }
 
@@ -399,6 +378,7 @@ void ai_display_filter(int flag)
                     &Region);
             }
         }
+
         ai_record_tm = cur_tm;
     }
 }
@@ -418,8 +398,8 @@ void display_welcom(void)
     FT.RGB.g = 255;
     FT.RGB.b = 255;
 
-    Pos.x = wel_pos_x;
-    Pos.y = wel_pos_y;
+    Pos.x = 520;
+    Pos.y = 225;
     display_character_into_screen(WELLCOM_STR,
         FT,
         &Pos, &Region);
@@ -458,31 +438,6 @@ void display_welcom(void)
         &Region);
 
 }
-
-void mute_ai_display(void)
-{
-    GrPos Pos;
-    GrRegion Region;
-    int ret;
-
-    Pixel64 FT;
-
-
-    FT.RGB.a = 255;
-    FT.RGB.r = 255;
-    FT.RGB.g = 255;
-    FT.RGB.b = 255;
-
-    Pos.x = mute_pos_x;
-    Pos.y = mute_pos_y;
-
-    display_character_into_screen(MUTE_MIC_TEST,
-        FT,
-        &Pos, &Region);
-
-
-    return ;
-}
 static int fd_ser = -1;
 
 void series_display(void)
@@ -505,8 +460,8 @@ void series_display(void)
     FT.RGB.g = 255;
     FT.RGB.b = 255;
 
-    Pos.x = ser_pos_x;
-    Pos.y = ser_pos_y;
+    Pos.x = 520;
+    Pos.y = 265;
 
     display_character_into_screen(CONFIRM_SERIES,
         FT,
@@ -525,8 +480,8 @@ void display_msata(void)
     int ret;
 
     ret = 1;
-    Pos.x = msata_pos_x;
-    Pos.y = msata_pos_y;
+    Pos.x = 520;
+    Pos.y = 305;
     FT.RGB.a = 255;
     FT.RGB.r = 255;
     FT.RGB.g = 255;
@@ -563,8 +518,8 @@ void display_tfcard(void)
     int ret;
 
     ret = confirm_tfcard_running();
-    Pos.x = tfc_pos_x;
-    Pos.y = tfc_pos_y;
+    Pos.x = 520;
+    Pos.y = 345;
     FT.RGB.a = 255;
     FT.RGB.r = 255;
     FT.RGB.g = 255;
@@ -603,8 +558,8 @@ void display_usb(void)
     int ret;
 
     ret = confirm_usb_running();
-    Pos.x = usb_pos_x;
-    Pos.y = usb_pos_y;
+    Pos.x = 520;
+    Pos.y = 385;
     FT.RGB.a = 255;
     FT.RGB.r = 255;
     FT.RGB.g = 255;
@@ -631,6 +586,7 @@ void display_usb(void)
 
 //    getchar();
 }
+
 
 void display_info(void)
 {
@@ -719,8 +675,8 @@ void display_stb_info(void)
     GrRegion Region;
     int ret;
     char data[100];
-    //get stbinfo
 
+    //get stbinfo
     memset(stb_id, 0, 64);
     memset(mac_id, 0, 64);
 
@@ -805,6 +761,7 @@ void display_stb_info(void)
             Pos,
             35,
             &Region);
+
 }
 
 void display_player(void)
@@ -813,8 +770,8 @@ void display_player(void)
 
     GrPos Pos;
     GrRegion Region;
-    Pos.x = play_pos_x;
-    Pos.y = play_pos_y;
+    Pos.x = 520;
+    Pos.y = 465;
     FT.RGB.a = 255;
     FT.RGB.r = 255;
     FT.RGB.g = 255;
@@ -826,7 +783,6 @@ void display_player(void)
     setFramebufAlpha((unsigned char ) 128);
     system("/tmp/player /tmp/160001.MPG >/tmp/play.log");
 
-
 }
 
 void display_gpio_putdown(void)
@@ -835,8 +791,8 @@ void display_gpio_putdown(void)
 
     GrPos Pos;
     GrRegion Region;
-    Pos.x = gpio_pos_x;
-    Pos.y = gpio_pos_y;
+    Pos.x = 520;
+    Pos.y = 425;
     FT.RGB.a = 255;
     FT.RGB.r = 255;
     FT.RGB.g = 0;
@@ -859,8 +815,8 @@ void display_gpio_test(void)
 
     GrPos Pos;
     GrRegion Region;
-    Pos.x = gpio_pos_x;
-    Pos.y = gpio_pos_y;
+    Pos.x = 520;
+    Pos.y = 425;
     FT.RGB.a = 255;
     FT.RGB.r = 255;
     FT.RGB.g = 255;

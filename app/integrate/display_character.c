@@ -37,7 +37,6 @@ static char display_char[MAX_DISP_CHARACTER][MAX_DISP_CHAR] = {
     {"GPIO已经测试"},
 
     {"请不要对mic说话"}
-
 };
 
 int display_character_into_screen(DISP_CHARACTER type,

@@ -91,6 +91,7 @@ int tcp_client_connect(tcp_client_item_def *pHandle);
 int tcp_client_send_data(tcp_client_item_def *pHandle, char *pData, int *pLength);
 int tcp_client_recv_data(tcp_client_item_def *pHandle, char *pData, int *pLength);
 int tcp_client_safe_close(tcp_client_item_def *pHandle);
+int tcp_client_close(tcp_client_item_def *pHandle);
 
 int get_active_network_ip_and_mac(char *ip, unsigned char *mac, char *cardname);
 

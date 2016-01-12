@@ -62,6 +62,8 @@ int init_logic_framebuf_module(void)
     gr_w = get_framebuf_width();
     gr_h = get_framebuf_height();
 
+    printf("gr_w %d, gr_h %d\n", gr_w, gr_h);
+
     if (pBgCanvas == NULL)
     {
         pBgCanvas = malloc(gr_w*gr_h*4);

@@ -6,6 +6,8 @@ static int gpio40_value = 0;
 static int gpio41_value = 0;
 static int gpio44_value = 0;
 static struct timeval record_tm;
+static struct timeval gpio_force_exit_tm;
+static int bgpio_quit = 0;
 
 int init_gpio_borad(void)
 {
@@ -17,10 +19,15 @@ int init_gpio_borad(void)
     write_gpio_status(41, gpio41_value);
 
     gettimeofday(&(record_tm), NULL);
+    gettimeofday(&(gpio_force_exit_tm), NULL);
 
     return 0;
 }
 
+int get_force_exit_gpio(void)
+{
+    return bgpio_quit;
+}
 
 int gpio_sharp_filter(void)
 {
@@ -30,8 +37,17 @@ int gpio_sharp_filter(void)
 
     gettimeofday(&cur_tm, NULL);
 
+    if (bgpio_quit == 0)
+    {
+        distms = ((cur_tm.tv_sec*1000+(cur_tm.tv_usec)/1000)-(gpio_force_exit_tm.tv_sec*1000+(gpio_force_exit_tm.tv_usec)/1000));
+        if (distms >= 90*1000)
+        {
+            bgpio_quit = 1;
+        }
+    }
+
     distms = ((cur_tm.tv_sec*1000+(cur_tm.tv_usec)/1000)-(record_tm.tv_sec*1000+(record_tm.tv_usec)/1000));
-    if (distms >= 5*1000)
+    if (distms >= 200)
     {
         if (bSharp)
         {
@@ -64,15 +80,17 @@ int gpio_sharp_filter(void)
     }
 
     ret = read_gpio_status(44, &gpio44_value);
-    if (ret)
+    //if (ret)
     {
         if (gpio44_value == 0)
         {
-            bSharp = 1;
+            //printf("\ngpio test finish\n");
+            set_test_status(gpio_test);
+            bSharp = 0;
         }
         else
         {
-            bSharp = 0;
+            bSharp = 1;
         }
     }
 

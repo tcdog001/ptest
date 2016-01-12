@@ -3,7 +3,8 @@ include $(STB_ROOT)/config.mak
 
 LIBOUT = $(STB_ROOT)/lib/slib/libserialcom.a
 
-OBJS = uart.o
+OBJS = uart.o \
+			uart_simnet.o
 	
 	
 %.o: %.c
