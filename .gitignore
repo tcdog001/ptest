@@ -16,6 +16,12 @@ lib/slib/libmsg.a
 lib/slib/librtc.a
 lib/slib/libserialcom.a
 lib/slib/libtemperature.a
+lib/slib/libav_engine_if.a
+lib/slib/libcrc32.a
+lib/slib/libft_Font.a
+lib/slib/libimgdec.a
+lib/slib/libnetwork.a
+lib/slib/libproduct.a
 
 ###############
 #    floder   #
